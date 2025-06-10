@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaksi - Investo</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+  <header class="bg-blue-600 text-white p-4 shadow">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-bold">Investo - Transaksi</h1>
+      <nav>
+        <a href="index.html" class="ml-4 hover:underline">Dashboard</a>
+          <a href="barang.html" class="ml-4 hover:underline">Barang</a>
+          <a href="kategori.html" class="ml-4 hover:underline">Kategori</a>
+          <a href="pemasok.html" class="ml-4 hover:underline">Pemasok</a>
+          <a href="transaksi.html" class="ml-4 hover:underline font-bold">Transaksi</a>
+          <a href="pengguna.html" class="ml-4 hover:underline">Pengguna</a>
+          <a href="logout.html" class="ml-4 hover:underline">Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container mx-auto py-10 px-4">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">Transaksi Barang</h2>
+      <div class="space-x-2">
+        <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onclick="openTransaksiModal('masuk')">+ Barang Masuk</button>
+        <button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700" onclick="openTransaksiModal('keluar')">- Barang Keluar</button>
+      </div>
+    </div>
+
+    <div class="bg-white shadow rounded-lg overflow-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="py-3 px-4 text-left">Tanggal</th>
+            <th class="py-3 px-4 text-left">Jenis</th>
+            <th class="py-3 px-4 text-left">Kode Barang</th>
+            <th class="py-3 px-4 text-left">Nama Barang</th>
+            <th class="py-3 px-4 text-left">Jumlah</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-t">
+            <td class="py-2 px-4">2025-06-10</td>
+            <td class="py-2 px-4">Masuk</td>
+            <td class="py-2 px-4">BRG001</td>
+            <td class="py-2 px-4">Laptop Asus</td>
+            <td class="py-2 px-4">10</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Modal Transaksi -->
+  <div id="transaksiModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white w-full max-w-md p-6 rounded shadow-lg">
+      <h3 id="transaksiModalTitle" class="text-xl font-semibold mb-4">Transaksi</h3>
+      <form id="transaksi-form" action="#" method="POST">
+        <input type="hidden" id="jenis-transaksi" name="jenis">
+        <div class="mb-3">
+          <label class="block mb-1">Tanggal</label>
+          <input type="date" id="tanggal" class="w-full border px-3 py-2 rounded" name="tanggal">
+        </div>
+        <div class="mb-3">
+          <label class="block mb-1">Kode Barang</label>
+          <input type="text" id="kode-barang" class="w-full border px-3 py-2 rounded" name="kode_barang">
+        </div>
+        <div class="mb-3">
+          <label class="block mb-1">Nama Barang</label>
+          <input type="text" id="nama-barang" class="w-full border px-3 py-2 rounded" name="nama_barang">
+        </div>
+        <div class="mb-3">
+          <label class="block mb-1">Jumlah</label>
+          <input type="number" id="jumlah" class="w-full border px-3 py-2 rounded" name="jumlah">
+        </div>
+        <div class="flex justify-end space-x-2">
+          <button type="button" onclick="closeTransaksiModal()" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Batal</button>
+          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openTransaksiModal(jenis) {
+      document.getElementById('transaksiModal').classList.remove('hidden');
+      const title = document.getElementById('transaksiModalTitle');
+      document.getElementById('jenis-transaksi').value = jenis;
+      title.innerText = jenis === 'masuk' ? 'Transaksi Barang Masuk' : 'Transaksi Barang Keluar';
+      document.getElementById('transaksi-form').reset();
+    }
+
+    function closeTransaksiModal() {
+      document.getElementById('transaksiModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

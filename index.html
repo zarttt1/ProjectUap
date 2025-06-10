@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Investo - Sistem Inventaris Barang</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <header class="bg-blue-600 text-white p-4 shadow">
+      <div class="container mx-auto flex justify-between items-center">
+        <h1 class="text-2xl font-bold">Investo</h1>
+        <nav>
+          <a href="index.html" class="ml-4 hover:underline">Dashboard</a>
+          <a href="barang.html" class="ml-4 hover:underline">Barang</a>
+          <a href="kategori.html" class="ml-4 hover:underline">Kategori</a>
+          <a href="pemasok.html" class="ml-4 hover:underline">Pemasok</a>
+          <a href="transaksi.html" class="ml-4 hover:underline">Transaksi</a>
+          <a href="pengguna.html" class="ml-4 hover:underline">Pengguna</a>
+          <a href="logout.html" class="ml-4 hover:underline">Logout</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container mx-auto my-6">
+      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-lg shadow p-4">
+          <h2 class="text-xl font-semibold mb-2">Total Barang</h2>
+          <p class="text-3xl font-bold text-blue-600">250</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <h2 class="text-xl font-semibold mb-2">Barang Masuk Hari Ini</h2>
+          <p class="text-3xl font-bold text-green-500">50</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <h2 class="text-xl font-semibold mb-2">Barang Keluar Hari Ini</h2>
+          <p class="text-3xl font-bold text-red-500">30</p>
+        </div>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="text-2xl font-bold mb-4">Riwayat Transaksi Terbaru</h2>
+        <div class="bg-white shadow rounded-lg overflow-auto">
+          <table class="min-w-full">
+            <thead class="bg-gray-200">
+              <tr>
+                <th class="py-2 px-4 text-left">Tanggal</th>
+                <th class="py-2 px-4 text-left">Jenis</th>
+                <th class="py-2 px-4 text-left">Barang</th>
+                <th class="py-2 px-4 text-left">Jumlah</th>
+                <th class="py-2 px-4 text-left">Pemasok/Penerima</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t">
+                <td class="py-2 px-4">2025-06-10</td>
+                <td class="py-2 px-4 text-green-600">Masuk</td>
+                <td class="py-2 px-4">Laptop</td>
+                <td class="py-2 px-4">10</td>
+                <td class="py-2 px-4">PT Teknologi</td>
+              </tr>
+              <tr class="border-t">
+                <td class="py-2 px-4">2025-06-10</td>
+                <td class="py-2 px-4 text-red-600">Keluar</td>
+                <td class="py-2 px-4">Printer</td>
+                <td class="py-2 px-4">5</td>
+                <td class="py-2 px-4">Gudang A</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bg-gray-200 text-center p-4 mt-10">
+      <p class="text-gray-700">
+        &copy; 2025 Investo. Sistem Inventaris Barang Sederhana.
+      </p>
+    </footer>
+  </body>
+</html>
