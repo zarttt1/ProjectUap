@@ -1,6 +1,0 @@
-CREATE TABLE pemasok (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nama_pemasok VARCHAR(100) NOT NULL,
-    alamat VARCHAR(255),
-    nomor_telepon VARCHAR(20)
-);

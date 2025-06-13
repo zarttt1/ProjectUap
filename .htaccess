@@ -1,0 +1,12 @@
+# Minimal .htaccess
+Options -Indexes
+
+<Files "*.sql">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "config/*">
+    Order allow,deny
+    Deny from all
+</Files>
