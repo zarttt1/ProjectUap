@@ -1,6 +1,6 @@
 <?php
 require_once 'config/database.php';
-requireLogin();
+requireAdmin(); // Only admin can manage users
 
 $database = new Database();
 $db = $database->getConnection();
@@ -11,41 +11,58 @@ if ($_POST) {
         switch ($_POST['action']) {
             case 'add':
                 $password_hash = password_hash($_POST['password'], PASSWORD_DEFAULT);
-                $query = "INSERT INTO users (username, password, nama_lengkap, email) 
-                         VALUES (:username, :password, :nama_lengkap, :email)";
+                $query = "INSERT INTO users (username, password, nama_lengkap, email, role, status) 
+                         VALUES (:username, :password, :nama_lengkap, :email, :role, :status)";
                 $stmt = $db->prepare($query);
                 $stmt->bindParam(':username', $_POST['username']);
                 $stmt->bindParam(':password', $password_hash);
                 $stmt->bindParam(':nama_lengkap', $_POST['nama_lengkap']);
                 $stmt->bindParam(':email', $_POST['email']);
+                $stmt->bindParam(':role', $_POST['role']);
+                $stmt->bindParam(':status', $_POST['status']);
                 $stmt->execute();
+                
+                logActivity($_SESSION['user_id'], 'Menambah user baru: ' . $_POST['username'] . ' (' . $_POST['role'] . ')', 'users', $db->lastInsertId());
                 break;
                 
             case 'edit':
                 if (!empty($_POST['password'])) {
                     $password_hash = password_hash($_POST['password'], PASSWORD_DEFAULT);
                     $query = "UPDATE users SET username = :username, password = :password, 
-                             nama_lengkap = :nama_lengkap, email = :email WHERE id = :id";
+                             nama_lengkap = :nama_lengkap, email = :email, role = :role, status = :status WHERE id = :id";
                     $stmt = $db->prepare($query);
                     $stmt->bindParam(':password', $password_hash);
                 } else {
                     $query = "UPDATE users SET username = :username, nama_lengkap = :nama_lengkap, 
-                             email = :email WHERE id = :id";
+                             email = :email, role = :role, status = :status WHERE id = :id";
                     $stmt = $db->prepare($query);
                 }
                 $stmt->bindParam(':username', $_POST['username']);
                 $stmt->bindParam(':nama_lengkap', $_POST['nama_lengkap']);
                 $stmt->bindParam(':email', $_POST['email']);
+                $stmt->bindParam(':role', $_POST['role']);
+                $stmt->bindParam(':status', $_POST['status']);
                 $stmt->bindParam(':id', $_POST['id']);
                 $stmt->execute();
+                
+                logActivity($_SESSION['user_id'], 'Mengedit user: ' . $_POST['username'], 'users', $_POST['id']);
                 break;
                 
             case 'delete':
                 if ($_POST['id'] != $_SESSION['user_id']) {
+                    // Get user info for logging
+                    $query = "SELECT username FROM users WHERE id = :id";
+                    $stmt = $db->prepare($query);
+                    $stmt->bindParam(':id', $_POST['id']);
+                    $stmt->execute();
+                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
                     $query = "DELETE FROM users WHERE id = :id";
                     $stmt = $db->prepare($query);
                     $stmt->bindParam(':id', $_POST['id']);
                     $stmt->execute();
+                    
+                    logActivity($_SESSION['user_id'], 'Menghapus user: ' . $user['username'], 'users', $_POST['id']);
                 }
                 break;
         }
@@ -69,6 +86,57 @@ $users_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <title>Kelola User - INVESTO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --brown-primary: #8B4513;
+            --brown-secondary: #A0522D;
+            --brown-light: #D2B48C;
+            --brown-dark: #654321;
+            --black-primary: #1a1a1a;
+            --black-secondary: #2d2d2d;
+            --black-light: #404040;
+        }
+        
+        .btn-brown {
+            background: linear-gradient(45deg, var(--brown-primary), var(--brown-secondary));
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-brown:hover {
+            background: linear-gradient(45deg, var(--brown-dark), var(--brown-primary));
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .table-brown thead {
+            background: linear-gradient(45deg, var(--brown-primary), var(--brown-secondary));
+            color: white;
+        }
+        
+        .content-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--brown-light);
+        }
+        
+        .page-title {
+            color: var(--brown-dark);
+            font-weight: bold;
+        }
+        
+        .modal-header {
+            background: linear-gradient(45deg, var(--brown-primary), var(--brown-secondary));
+            color: white;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--brown-primary);
+            box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+        }
+    </style>
 </head>
 <body>
     <?php include 'includes/navbar.php'; ?>
@@ -79,22 +147,24 @@ $users_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2"><i class="fas fa-users"></i> Kelola User</h1>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+                    <h1 class="h2 page-title"><i class="fas fa-users"></i> Kelola User</h1>
+                    <button type="button" class="btn btn-brown" data-bs-toggle="modal" data-bs-target="#addModal">
                         <i class="fas fa-plus"></i> Tambah User
                     </button>
                 </div>
                 
-                <div class="card shadow">
+                <div class="card content-card shadow">
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
-                                <thead class="table-dark">
+                                <thead class="table-brown">
                                     <tr>
                                         <th>No</th>
                                         <th>Username</th>
                                         <th>Nama Lengkap</th>
                                         <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
                                         <th>Tanggal Dibuat</th>
                                         <th>Aksi</th>
                                     </tr>
@@ -106,6 +176,14 @@ $users_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <td><?php echo $user['username']; ?></td>
                                         <td><?php echo $user['nama_lengkap']; ?></td>
                                         <td><?php echo $user['email'] ?: '-'; ?></td>
+                                        <td><?php echo getRoleBadge($user['role']); ?></td>
+                                        <td>
+                                            <?php if ($user['status'] == 'aktif'): ?>
+                                                <span class="badge bg-success">Aktif</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-danger">Non-aktif</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><?php echo formatTanggal($user['created_at']); ?></td>
                                         <td>
                                             <button class="btn btn-sm btn-warning" onclick="editUser(<?php echo htmlspecialchars(json_encode($user)); ?>)">
@@ -159,10 +237,25 @@ $users_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <label class="form-label">Email</label>
                             <input type="email" class="form-control" name="email">
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select class="form-select" name="role" required>
+                                <option value="">Pilih Role</option>
+                                <option value="admin">Admin</option>
+                                <option value="staff">Staff Gudang</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status" required>
+                                <option value="aktif">Aktif</option>
+                                <option value="nonaktif">Non-aktif</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary">Simpan</button>
+                        <button type="submit" class="btn btn-brown">Simpan</button>
                     </div>
                 </form>
             </div>
@@ -197,10 +290,24 @@ $users_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <label class="form-label">Email</label>
                             <input type="email" class="form-control" name="email" id="edit_email">
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select class="form-select" name="role" id="edit_role" required>
+                                <option value="admin">Admin</option>
+                                <option value="staff">Staff Gudang</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status" id="edit_status" required>
+                                <option value="aktif">Aktif</option>
+                                <option value="nonaktif">Non-aktif</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary">Update</button>
+                        <button type="submit" class="btn btn-brown">Update</button>
                     </div>
                 </form>
             </div>
@@ -214,6 +321,8 @@ $users_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
             document.getElementById('edit_username').value = user.username;
             document.getElementById('edit_nama_lengkap').value = user.nama_lengkap;
             document.getElementById('edit_email').value = user.email || '';
+            document.getElementById('edit_role').value = user.role;
+            document.getElementById('edit_status').value = user.status;
             document.getElementById('edit_password').value = '';
             new bootstrap.Modal(document.getElementById('editModal')).show();
         }

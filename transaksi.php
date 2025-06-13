@@ -10,80 +10,42 @@ if ($_POST) {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'add':
-                try {
-                    $db->beginTransaction();
-                    
-                    // Generate kode transaksi
-                    $kode_transaksi = generateKode('TRX');
-                    
-                    // Insert transaksi
-                    $query = "INSERT INTO transaksi (kode_transaksi, jenis_transaksi, barang_id, jumlah, harga_satuan, total_harga, keterangan, tanggal_transaksi, user_id) 
-                             VALUES (:kode_transaksi, :jenis_transaksi, :barang_id, :jumlah, :harga_satuan, :total_harga, :keterangan, :tanggal_transaksi, :user_id)";
-                    $stmt = $db->prepare($query);
-                    $stmt->bindParam(':kode_transaksi', $kode_transaksi);
-                    $stmt->bindParam(':jenis_transaksi', $_POST['jenis_transaksi']);
-                    $stmt->bindParam(':barang_id', $_POST['barang_id']);
-                    $stmt->bindParam(':jumlah', $_POST['jumlah']);
-                    $stmt->bindParam(':harga_satuan', $_POST['harga_satuan']);
-                    
-                    $total_harga = $_POST['jumlah'] * $_POST['harga_satuan'];
-                    $stmt->bindParam(':total_harga', $total_harga);
-                    $stmt->bindParam(':keterangan', $_POST['keterangan']);
-                    $stmt->bindParam(':tanggal_transaksi', $_POST['tanggal_transaksi']);
-                    $stmt->bindParam(':user_id', $_SESSION['user_id']);
-                    $stmt->execute();
-                    
-                    // Update stok barang
-                    if ($_POST['jenis_transaksi'] == 'masuk') {
-                        $query = "UPDATE barang SET stok_saat_ini = stok_saat_ini + :jumlah WHERE id = :barang_id";
-                    } else {
-                        $query = "UPDATE barang SET stok_saat_ini = stok_saat_ini - :jumlah WHERE id = :barang_id";
-                    }
-                    $stmt = $db->prepare($query);
-                    $stmt->bindParam(':jumlah', $_POST['jumlah']);
-                    $stmt->bindParam(':barang_id', $_POST['barang_id']);
-                    $stmt->execute();
-                    
-                    $db->commit();
-                } catch (Exception $e) {
-                    $db->rollback();
-                    echo "Error: " . $e->getMessage();
-                }
-                break;
+                $kode_transaksi = generateKode('TRX');
+                $total_harga = $_POST['jumlah'] * $_POST['harga_satuan'];
                 
-            case 'delete':
-                try {
-                    $db->beginTransaction();
-                    
-                    // Get transaksi data
-                    $query = "SELECT * FROM transaksi WHERE id = :id";
-                    $stmt = $db->prepare($query);
-                    $stmt->bindParam(':id', $_POST['id']);
-                    $stmt->execute();
-                    $transaksi = $stmt->fetch(PDO::FETCH_ASSOC);
-                    
-                    // Reverse stok update
-                    if ($transaksi['jenis_transaksi'] == 'masuk') {
-                        $query = "UPDATE barang SET stok_saat_ini = stok_saat_ini - :jumlah WHERE id = :barang_id";
-                    } else {
-                        $query = "UPDATE barang SET stok_saat_ini = stok_saat_ini + :jumlah WHERE id = :barang_id";
-                    }
-                    $stmt = $db->prepare($query);
-                    $stmt->bindParam(':jumlah', $transaksi['jumlah']);
-                    $stmt->bindParam(':barang_id', $transaksi['barang_id']);
-                    $stmt->execute();
-                    
-                    // Delete transaksi
-                    $query = "DELETE FROM transaksi WHERE id = :id";
-                    $stmt = $db->prepare($query);
-                    $stmt->bindParam(':id', $_POST['id']);
-                    $stmt->execute();
-                    
-                    $db->commit();
-                } catch (Exception $e) {
-                    $db->rollback();
-                    echo "Error: " . $e->getMessage();
+                // Insert transaksi
+                $query = "INSERT INTO transaksi (kode_transaksi, jenis_transaksi, barang_id, jumlah, harga_satuan, total_harga, keterangan, user_id) 
+                         VALUES (:kode_transaksi, :jenis_transaksi, :barang_id, :jumlah, :harga_satuan, :total_harga, :keterangan, :user_id)";
+                $stmt = $db->prepare($query);
+                $stmt->bindParam(':kode_transaksi', $kode_transaksi);
+                $stmt->bindParam(':jenis_transaksi', $_POST['jenis_transaksi']);
+                $stmt->bindParam(':barang_id', $_POST['barang_id']);
+                $stmt->bindParam(':jumlah', $_POST['jumlah']);
+                $stmt->bindParam(':harga_satuan', $_POST['harga_satuan']);
+                $stmt->bindParam(':total_harga', $total_harga);
+                $stmt->bindParam(':keterangan', $_POST['keterangan']);
+                $stmt->bindParam(':user_id', $_SESSION['user_id']);
+                $stmt->execute();
+                
+                // Update stok barang
+                if ($_POST['jenis_transaksi'] == 'masuk') {
+                    $query = "UPDATE barang SET stok_saat_ini = stok_saat_ini + :jumlah WHERE id = :barang_id";
+                } else {
+                    $query = "UPDATE barang SET stok_saat_ini = stok_saat_ini - :jumlah WHERE id = :barang_id";
                 }
+                $stmt = $db->prepare($query);
+                $stmt->bindParam(':jumlah', $_POST['jumlah']);
+                $stmt->bindParam(':barang_id', $_POST['barang_id']);
+                $stmt->execute();
+                
+                // Get barang name for logging
+                $query = "SELECT nama_barang FROM barang WHERE id = :barang_id";
+                $stmt = $db->prepare($query);
+                $stmt->bindParam(':barang_id', $_POST['barang_id']);
+                $stmt->execute();
+                $barang = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                logActivity($_SESSION['user_id'], 'Menambah transaksi ' . $_POST['jenis_transaksi'] . ': ' . $barang['nama_barang'] . ' (' . $_POST['jumlah'] . ')', 'transaksi', $db->lastInsertId());
                 break;
         }
         header("Location: transaksi.php");
@@ -91,12 +53,12 @@ if ($_POST) {
     }
 }
 
-// Get all transactions
-$query = "SELECT t.*, b.nama_barang, b.kode_barang, b.satuan, u.nama_lengkap 
+// Get all transactions with barang and user info
+$query = "SELECT t.*, b.nama_barang, b.satuan, u.nama_lengkap 
           FROM transaksi t 
-          JOIN barang b ON t.barang_id = b.id 
+          LEFT JOIN barang b ON t.barang_id = b.id 
           LEFT JOIN users u ON t.user_id = u.id 
-          ORDER BY t.tanggal_transaksi DESC";
+          ORDER BY t.created_at DESC";
 $stmt = $db->prepare($query);
 $stmt->execute();
 $transaksi_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -116,6 +78,57 @@ $barang_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <title>Transaksi - INVESTO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --brown-primary: #8B4513;
+            --brown-secondary: #A0522D;
+            --brown-light: #D2B48C;
+            --brown-dark: #654321;
+            --black-primary: #1a1a1a;
+            --black-secondary: #2d2d2d;
+            --black-light: #404040;
+        }
+        
+        .btn-brown {
+            background: linear-gradient(45deg, var(--brown-primary), var(--brown-secondary));
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-brown:hover {
+            background: linear-gradient(45deg, var(--brown-dark), var(--brown-primary));
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .table-brown thead {
+            background: linear-gradient(45deg, var(--brown-primary), var(--brown-secondary));
+            color: white;
+        }
+        
+        .content-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--brown-light);
+        }
+        
+        .page-title {
+            color: var(--brown-dark);
+            font-weight: bold;
+        }
+        
+        .modal-header {
+            background: linear-gradient(45deg, var(--brown-primary), var(--brown-secondary));
+            color: white;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--brown-primary);
+            box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+        }
+    </style>
 </head>
 <body>
     <?php include 'includes/navbar.php'; ?>
@@ -126,17 +139,17 @@ $barang_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2"><i class="fas fa-exchange-alt"></i> Transaksi Barang</h1>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+                    <h1 class="h2 page-title"><i class="fas fa-exchange-alt"></i> Transaksi Barang</h1>
+                    <button type="button" class="btn btn-brown" data-bs-toggle="modal" data-bs-target="#addModal">
                         <i class="fas fa-plus"></i> Tambah Transaksi
                     </button>
                 </div>
                 
-                <div class="card shadow">
+                <div class="card content-card shadow">
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
-                                <thead class="table-dark">
+                                <thead class="table-brown">
                                     <tr>
                                         <th>Kode Transaksi</th>
                                         <th>Tanggal</th>
@@ -146,7 +159,7 @@ $barang_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <th>Harga Satuan</th>
                                         <th>Total</th>
                                         <th>User</th>
-                                        <th>Aksi</th>
+                                        <th>Keterangan</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -155,27 +168,22 @@ $barang_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <td><?php echo $transaksi['kode_transaksi']; ?></td>
                                         <td><?php echo formatTanggal($transaksi['tanggal_transaksi']); ?></td>
                                         <td>
-                                            <span class="badge <?php echo $transaksi['jenis_transaksi'] == 'masuk' ? 'bg-success' : 'bg-danger'; ?>">
-                                                <i class="fas <?php echo $transaksi['jenis_transaksi'] == 'masuk' ? 'fa-arrow-down' : 'fa-arrow-up'; ?>"></i>
-                                                <?php echo ucfirst($transaksi['jenis_transaksi']); ?>
-                                            </span>
+                                            <?php if ($transaksi['jenis_transaksi'] == 'masuk'): ?>
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-arrow-down"></i> Masuk
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-arrow-up"></i> Keluar
+                                                </span>
+                                            <?php endif; ?>
                                         </td>
-                                        <td>
-                                            <strong><?php echo $transaksi['nama_barang']; ?></strong><br>
-                                            <small class="text-muted"><?php echo $transaksi['kode_barang']; ?></small>
-                                        </td>
+                                        <td><?php echo $transaksi['nama_barang']; ?></td>
                                         <td><?php echo $transaksi['jumlah'] . ' ' . $transaksi['satuan']; ?></td>
                                         <td><?php echo formatRupiah($transaksi['harga_satuan']); ?></td>
                                         <td><?php echo formatRupiah($transaksi['total_harga']); ?></td>
                                         <td><?php echo $transaksi['nama_lengkap']; ?></td>
-                                        <td>
-                                            <button class="btn btn-sm btn-info" onclick="viewDetail(<?php echo htmlspecialchars(json_encode($transaksi)); ?>)">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-danger" onclick="deleteTransaksi(<?php echo $transaksi['id']; ?>, '<?php echo $transaksi['kode_transaksi']; ?>')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
+                                        <td><?php echo $transaksi['keterangan'] ?: '-'; ?></td>
                                     </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -211,46 +219,38 @@ $barang_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label">Tanggal Transaksi</label>
-                                    <input type="datetime-local" class="form-control" name="tanggal_transaksi" value="<?php echo date('Y-m-d\TH:i'); ?>" required>
+                                    <label class="form-label">Barang</label>
+                                    <select class="form-select" name="barang_id" id="barang_id" required onchange="updateHarga()">
+                                        <option value="">Pilih Barang</option>
+                                        <?php foreach ($barang_list as $barang): ?>
+                                        <option value="<?php echo $barang['id']; ?>" 
+                                                data-harga-beli="<?php echo $barang['harga_beli']; ?>"
+                                                data-harga-jual="<?php echo $barang['harga_jual']; ?>"
+                                                data-stok="<?php echo $barang['stok_saat_ini']; ?>">
+                                            <?php echo $barang['nama_barang'] . ' (Stok: ' . $barang['stok_saat_ini'] . ')'; ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Jumlah</label>
+                                    <input type="number" class="form-control" name="jumlah" id="jumlah" required min="1" onchange="hitungTotal()">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Harga Satuan</label>
+                                    <input type="number" class="form-control" name="harga_satuan" id="harga_satuan" required step="0.01" onchange="hitungTotal()">
                                 </div>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Barang</label>
-                            <select class="form-select" name="barang_id" id="barang_id" required onchange="updateHarga()">
-                                <option value="">Pilih Barang</option>
-                                <?php foreach ($barang_list as $barang): ?>
-                                <option value="<?php echo $barang['id']; ?>" 
-                                        data-harga-beli="<?php echo $barang['harga_beli']; ?>"
-                                        data-harga-jual="<?php echo $barang['harga_jual']; ?>"
-                                        data-stok="<?php echo $barang['stok_saat_ini']; ?>"
-                                        data-satuan="<?php echo $barang['satuan']; ?>">
-                                    <?php echo $barang['nama_barang'] . ' (' . $barang['kode_barang'] . ') - Stok: ' . $barang['stok_saat_ini']; ?>
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Jumlah</label>
-                                    <input type="number" class="form-control" name="jumlah" id="jumlah" min="1" required onchange="hitungTotal()">
-                                    <small class="text-muted" id="stok_info"></small>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Harga Satuan</label>
-                                    <input type="number" class="form-control" name="harga_satuan" id="harga_satuan" step="0.01" required onchange="hitungTotal()">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <label class="form-label">Total Harga</label>
-                                    <input type="text" class="form-control" id="total_display" readonly>
-                                </div>
-                            </div>
+                            <label class="form-label">Total Harga</label>
+                            <input type="text" class="form-control" id="total_harga_display" readonly>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Keterangan</label>
@@ -259,27 +259,9 @@ $barang_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary">Simpan</button>
+                        <button type="submit" class="btn btn-brown">Simpan</button>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Detail Modal -->
-    <div class="modal fade" id="detailModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Detail Transaksi</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="detail_content">
-                    <!-- Content will be filled by JavaScript -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                </div>
             </div>
         </div>
     </div>
@@ -287,64 +269,33 @@ $barang_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function updateHarga() {
-            const select = document.getElementById('barang_id');
-            const option = select.options[select.selectedIndex];
+            const barangSelect = document.getElementById('barang_id');
             const jenisTransaksi = document.querySelector('select[name="jenis_transaksi"]').value;
+            const hargaSatuanInput = document.getElementById('harga_satuan');
             
-            if (option.value) {
-                const hargaBeli = parseFloat(option.dataset.hargaBeli);
-                const hargaJual = parseFloat(option.dataset.hargaJual);
-                const stok = parseInt(option.dataset.stok);
-                const satuan = option.dataset.satuan;
+            if (barangSelect.value && jenisTransaksi) {
+                const selectedOption = barangSelect.options[barangSelect.selectedIndex];
+                const hargaBeli = selectedOption.getAttribute('data-harga-beli');
+                const hargaJual = selectedOption.getAttribute('data-harga-jual');
                 
-                // Set harga berdasarkan jenis transaksi
                 if (jenisTransaksi === 'masuk') {
-                    document.getElementById('harga_satuan').value = hargaBeli;
-                } else if (jenisTransaksi === 'keluar') {
-                    document.getElementById('harga_satuan').value = hargaJual;
+                    hargaSatuanInput.value = hargaBeli;
+                } else {
+                    hargaSatuanInput.value = hargaJual;
                 }
                 
-                document.getElementById('stok_info').textContent = `Stok tersedia: ${stok} ${satuan}`;
                 hitungTotal();
             }
         }
         
         function hitungTotal() {
-            const jumlah = parseFloat(document.getElementById('jumlah').value) || 0;
-            const harga = parseFloat(document.getElementById('harga_satuan').value) || 0;
-            const total = jumlah * harga;
+            const jumlah = document.getElementById('jumlah').value;
+            const hargaSatuan = document.getElementById('harga_satuan').value;
+            const totalDisplay = document.getElementById('total_harga_display');
             
-            document.getElementById('total_display').value = new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR'
-            }).format(total);
-        }
-        
-        function viewDetail(transaksi) {
-            const content = `
-                <table class="table table-borderless">
-                    <tr><td><strong>Kode Transaksi:</strong></td><td>${transaksi.kode_transaksi}</td></tr>
-                    <tr><td><strong>Tanggal:</strong></td><td>${new Date(transaksi.tanggal_transaksi).toLocaleString('id-ID')}</td></tr>
-                    <tr><td><strong>Jenis:</strong></td><td><span class="badge ${transaksi.jenis_transaksi === 'masuk' ? 'bg-success' : 'bg-danger'}">${transaksi.jenis_transaksi.toUpperCase()}</span></td></tr>
-                    <tr><td><strong>Barang:</strong></td><td>${transaksi.nama_barang} (${transaksi.kode_barang})</td></tr>
-                    <tr><td><strong>Jumlah:</strong></td><td>${transaksi.jumlah} ${transaksi.satuan}</td></tr>
-                    <tr><td><strong>Harga Satuan:</strong></td><td>${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(transaksi.harga_satuan)}</td></tr>
-                    <tr><td><strong>Total Harga:</strong></td><td>${new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR'}).format(transaksi.total_harga)}</td></tr>
-                    <tr><td><strong>Keterangan:</strong></td><td>${transaksi.keterangan || '-'}</td></tr>
-                    <tr><td><strong>User:</strong></td><td>${transaksi.nama_lengkap}</td></tr>
-                </table>
-            `;
-            document.getElementById('detail_content').innerHTML = content;
-            new bootstrap.Modal(document.getElementById('detailModal')).show();
-        }
-        
-        function deleteTransaksi(id, kode) {
-            if (confirm('Apakah Anda yakin ingin menghapus transaksi "' + kode + '"?\nStok barang akan dikembalikan ke kondisi sebelumnya.')) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = '<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="' + id + '">';
-                document.body.appendChild(form);
-                form.submit();
+            if (jumlah && hargaSatuan) {
+                const total = jumlah * hargaSatuan;
+                totalDisplay.value = 'Rp ' + total.toLocaleString('id-ID');
             }
         }
         

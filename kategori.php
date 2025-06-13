@@ -1,6 +1,6 @@
 <?php
 require_once 'config/database.php';
-requireLogin();
+requireAdmin(); // Only admin can manage categories
 
 $database = new Database();
 $db = $database->getConnection();
@@ -15,6 +15,8 @@ if ($_POST) {
                 $stmt->bindParam(':nama_kategori', $_POST['nama_kategori']);
                 $stmt->bindParam(':deskripsi', $_POST['deskripsi']);
                 $stmt->execute();
+                
+                logActivity($_SESSION['user_id'], 'Menambah kategori baru: ' . $_POST['nama_kategori'], 'kategori', $db->lastInsertId());
                 break;
                 
             case 'edit':
@@ -24,13 +26,24 @@ if ($_POST) {
                 $stmt->bindParam(':deskripsi', $_POST['deskripsi']);
                 $stmt->bindParam(':id', $_POST['id']);
                 $stmt->execute();
+                
+                logActivity($_SESSION['user_id'], 'Mengedit kategori: ' . $_POST['nama_kategori'], 'kategori', $_POST['id']);
                 break;
                 
             case 'delete':
+                // Get category name for logging
+                $query = "SELECT nama_kategori FROM kategori WHERE id = :id";
+                $stmt = $db->prepare($query);
+                $stmt->bindParam(':id', $_POST['id']);
+                $stmt->execute();
+                $kategori = $stmt->fetch(PDO::FETCH_ASSOC);
+                
                 $query = "DELETE FROM kategori WHERE id = :id";
                 $stmt = $db->prepare($query);
                 $stmt->bindParam(':id', $_POST['id']);
                 $stmt->execute();
+                
+                logActivity($_SESSION['user_id'], 'Menghapus kategori: ' . $kategori['nama_kategori'], 'kategori', $_POST['id']);
                 break;
         }
         header("Location: kategori.php");
@@ -57,6 +70,63 @@ $kategori_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <title>Kategori - INVESTO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --brown-primary: #8B4513;
+            --brown-secondary: #A0522D;
+            --brown-light: #D2B48C;
+            --brown-dark: #654321;
+            --black-primary: #1a1a1a;
+            --black-secondary: #2d2d2d;
+            --black-light: #404040;
+        }
+        
+        .btn-brown {
+            background: linear-gradient(45deg, var(--brown-primary), var(--brown-secondary));
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-brown:hover {
+            background: linear-gradient(45deg, var(--brown-dark), var(--brown-primary));
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .table-brown thead {
+            background: linear-gradient(45deg, var(--brown-primary), var(--brown-secondary));
+            color: white;
+        }
+        
+        .content-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--brown-light);
+        }
+        
+        .page-title {
+            color: var(--brown-dark);
+            font-weight: bold;
+        }
+        
+        .modal-header {
+            background: linear-gradient(45deg, var(--brown-primary), var(--brown-secondary));
+            color: white;
+        }
+        
+        .alert-brown {
+            background: var(--brown-light);
+            border-color: var(--brown-secondary);
+            color: var(--brown-dark);
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--brown-primary);
+            box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+        }
+    </style>
 </head>
 <body>
     <?php include 'includes/navbar.php'; ?>
@@ -67,17 +137,22 @@ $kategori_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2"><i class="fas fa-tags"></i> Kategori Barang</h1>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+                    <h1 class="h2 page-title"><i class="fas fa-tags"></i> Kategori Barang</h1>
+                    <button type="button" class="btn btn-brown" data-bs-toggle="modal" data-bs-target="#addModal">
                         <i class="fas fa-plus"></i> Tambah Kategori
                     </button>
                 </div>
                 
-                <div class="card shadow">
+                <div class="alert alert-brown">
+                    <i class="fas fa-info-circle"></i> 
+                    <strong>Admin Only:</strong> Hanya Admin yang dapat mengelola kategori barang.
+                </div>
+                
+                <div class="card content-card shadow">
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
-                                <thead class="table-dark">
+                                <thead class="table-brown">
                                     <tr>
                                         <th>No</th>
                                         <th>Nama Kategori</th>
@@ -144,7 +219,7 @@ $kategori_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary">Simpan</button>
+                        <button type="submit" class="btn btn-brown">Simpan</button>
                     </div>
                 </form>
             </div>
@@ -174,7 +249,7 @@ $kategori_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary">Update</button>
+                        <button type="submit" class="btn btn-brown">Update</button>
                     </div>
                 </form>
             </div>

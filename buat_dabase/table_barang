@@ -1,7 +1,0 @@
-CREATE TABLE barang (
-    kode VARCHAR(10) PRIMARY KEY,
-    nama VARCHAR(100) NOT NULL,
-    kategori VARCHAR(50) NOT NULL,
-    stok INT NOT NULL DEFAULT 0,
-    harga DECIMAL(15, 2) NOT NULL
-);
