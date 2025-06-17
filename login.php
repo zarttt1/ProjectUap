@@ -125,6 +125,16 @@ if ($_POST) {
             border-color: var(--brown-primary);
             box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
         }
+
+        .login-link {
+            color: var(--brown-primary);
+            text-decoration: none;
+        }
+        
+        .login-link:hover {
+            color: var(--brown-dark);
+            text-decoration: underline;
+        }
         
         .demo-accounts {
             background: var(--black-secondary);
@@ -172,6 +182,9 @@ if ($_POST) {
                             <button type="submit" class="btn btn-brown w-100">
                                 <i class="fas fa-sign-in-alt"></i> Login
                             </button>
+                            <div class="text-center mt-3">
+                                <p class="mb-0">Belum punya akun? <a href="register.php" class="login-link">Daftar di sini</a></p>
+                            </div>
                         </form>
                     </div>
                 </div>
