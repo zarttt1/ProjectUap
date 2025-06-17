@@ -5,7 +5,6 @@ requireLogin();
 $database = new Database();
 $db = $database->getConnection();
 
-// Handle form submissions
 if ($_POST) {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {

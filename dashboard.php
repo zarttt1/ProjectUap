@@ -5,7 +5,6 @@ requireLogin();
 $database = new Database();
 $db = $database->getConnection();
 
-// Get statistics
 $stats = [];
 
 // Total barang

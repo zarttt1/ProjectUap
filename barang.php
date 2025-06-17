@@ -5,12 +5,10 @@ requireLogin();
 $database = new Database();
 $db = $database->getConnection();
 
-// Handle form submissions
 if ($_POST) {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'add':
-                // Only admin can add new items
                 if (!isAdmin()) {
                     header("Location: barang.php?error=access_denied");
                     exit();
@@ -18,8 +16,7 @@ if ($_POST) {
                 
                 $kode_barang = generateKode('BRG');
                 $gambar = null;
-                
-                // Handle image upload
+
                 if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == 0) {
                     $gambar = uploadImage($_FILES['gambar']);
                 }
@@ -44,15 +41,13 @@ if ($_POST) {
                 break;
                 
             case 'edit':
-                // Only admin can edit items
                 if (!isAdmin()) {
                     header("Location: barang.php?error=access_denied");
                     exit();
                 }
                 
                 $gambar = $_POST['gambar_lama'];
-                
-                // Handle new image upload
+
                 if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == 0) {
                     $new_gambar = uploadImage($_FILES['gambar']);
                     if ($new_gambar) {
@@ -84,20 +79,17 @@ if ($_POST) {
                 break;
                 
             case 'delete':
-                // Only admin can delete items
                 if (!isAdmin()) {
                     header("Location: barang.php?error=access_denied");
                     exit();
                 }
-                
-                // Get item info for logging and delete image
+
                 $query = "SELECT nama_barang, gambar FROM barang WHERE id = :id";
                 $stmt = $db->prepare($query);
                 $stmt->bindParam(':id', $_POST['id']);
                 $stmt->execute();
                 $barang = $stmt->fetch(PDO::FETCH_ASSOC);
                 
-                // Delete image file
                 if ($barang['gambar'] && file_exists('uploads/barang/' . $barang['gambar'])) {
                     unlink('uploads/barang/' . $barang['gambar']);
                 }
@@ -115,7 +107,6 @@ if ($_POST) {
     }
 }
 
-// Get all items with category and supplier info
 $query = "SELECT b.*, k.nama_kategori, s.nama_supplier 
           FROM barang b 
           LEFT JOIN kategori k ON b.kategori_id = k.id 
@@ -125,14 +116,12 @@ $stmt = $db->prepare($query);
 $stmt->execute();
 $barang_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Get categories for dropdown (only if admin)
 if (isAdmin()) {
     $query = "SELECT * FROM kategori ORDER BY nama_kategori";
     $stmt = $db->prepare($query);
     $stmt->execute();
     $kategori_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get suppliers for dropdown
     $query = "SELECT * FROM supplier ORDER BY nama_supplier";
     $stmt = $db->prepare($query);
     $stmt->execute();
@@ -436,8 +425,7 @@ if (isAdmin()) {
                         <input type="hidden" name="action" value="edit">
                         <input type="hidden" name="id" id="edit_id">
                         <input type="hidden" name="gambar_lama" id="edit_gambar_lama">
-                        
-                        <!-- Current Image Display -->
+
                         <div class="mb-3">
                             <label class="form-label">Gambar Saat Ini</label>
                             <div id="current-image-container">
@@ -445,8 +433,7 @@ if (isAdmin()) {
                                 <p id="no-image" class="text-muted">Tidak ada gambar</p>
                             </div>
                         </div>
-                        
-                        <!-- New Image Upload -->
+
                         <div class="mb-3">
                             <label class="form-label">Ganti Gambar (Opsional)</label>
                             <div class="image-upload-area">
@@ -560,8 +547,7 @@ if (isAdmin()) {
             document.getElementById('edit_stok_minimum').value = barang.stok_minimum;
             document.getElementById('edit_deskripsi').value = barang.deskripsi || '';
             document.getElementById('edit_gambar_lama').value = barang.gambar || '';
-            
-            // Show current image
+
             const currentImage = document.getElementById('current-image');
             const noImage = document.getElementById('no-image');
             if (barang.gambar) {
@@ -572,8 +558,7 @@ if (isAdmin()) {
                 currentImage.style.display = 'none';
                 noImage.style.display = 'block';
             }
-            
-            // Reset preview
+
             document.getElementById('edit-preview').style.display = 'none';
             
             new bootstrap.Modal(document.getElementById('editModal')).show();

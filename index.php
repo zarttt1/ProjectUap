@@ -1,5 +1,4 @@
 <?php
-// Redirect to dashboard if logged in, otherwise to login
 require_once 'config/database.php';
 
 if (isLoggedIn()) {
