@@ -136,6 +136,15 @@ $users_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
             border-color: var(--brown-primary);
             box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
         }
+
+        select:disabled {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: none !important;
+            background-color: #e9ecef; /* warna Bootstrap default untuk input nonaktif */
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -317,13 +326,55 @@ $users_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function editUser(user) {
-            document.getElementById('edit_id').value = user.id;
-            document.getElementById('edit_username').value = user.username;
-            document.getElementById('edit_nama_lengkap').value = user.nama_lengkap;
-            document.getElementById('edit_email').value = user.email || '';
-            document.getElementById('edit_role').value = user.role;
-            document.getElementById('edit_status').value = user.status;
-            document.getElementById('edit_password').value = '';
+        const sessionUserId = <?php echo $_SESSION['user_id']; ?>;
+        const isTargetAdmin = user.role === 'admin';
+
+        // Isi nilai form
+        document.getElementById('edit_id').value = user.id;
+        document.getElementById('edit_username').value = user.username;
+        document.getElementById('edit_nama_lengkap').value = user.nama_lengkap;
+        document.getElementById('edit_email').value = user.email || '';
+        document.getElementById('edit_password').value = '';
+
+        // Disable role input SELALU
+        const roleSelect = document.getElementById('edit_role');
+        roleSelect.value = user.role;
+        roleSelect.disabled = true;
+
+        // inject hidden input untuk role
+        if (!document.getElementById('hidden_role')) {
+            const hiddenRole = document.createElement('input');
+            hiddenRole.type = 'hidden';
+            hiddenRole.name = 'role';
+            hiddenRole.value = user.role;
+            hiddenRole.id = 'hidden_role';
+            roleSelect.parentNode.appendChild(hiddenRole);
+        } else {
+            document.getElementById('hidden_role').value = user.role;
+        }
+
+        // Status: hanya disable kalau target adalah admin
+        const statusSelect = document.getElementById('edit_status');
+        statusSelect.value = user.status;
+        statusSelect.disabled = isTargetAdmin;
+
+        // inject hidden input untuk status jika admin
+        if (isTargetAdmin) {
+            if (!document.getElementById('hidden_status')) {
+                const hiddenStatus = document.createElement('input');
+                hiddenStatus.type = 'hidden';
+                hiddenStatus.name = 'status';
+                hiddenStatus.value = user.status;
+                hiddenStatus.id = 'hidden_status';
+                statusSelect.parentNode.appendChild(hiddenStatus);
+            } else {
+                document.getElementById('hidden_status').value = user.status;
+            }
+            } else {
+                const hiddenStatus = document.getElementById('hidden_status');
+                if (hiddenStatus) hiddenStatus.remove();
+            }
+
             new bootstrap.Modal(document.getElementById('editModal')).show();
         }
         
