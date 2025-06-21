@@ -12,12 +12,8 @@
     .navbar-brown {
         background: linear-gradient(135deg, var(--black-primary) 0%, var(--brown-dark) 100%);
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 75px;
-        z-index: 1050;
+        position: static; /* Ubah dari fixed ke static */
+        z-index: 100;
     }
     
     .navbar-brown .navbar-brand {

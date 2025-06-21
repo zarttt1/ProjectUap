@@ -60,11 +60,11 @@
 <style>
     .sidebar {
         position: fixed;
-        top: 56px;
+        top: 0; /* Ubah dari 56px ke 0 agar full sampai atas */
         bottom: 0;
         left: 0;
-        z-index: 100;
-        padding: 48px 0 0;
+        z-index: 99; /* Turunkan z-index agar di bawah navbar */
+        padding: 76px 0 0; /* Tambah padding top untuk memberi ruang navbar */
         background: linear-gradient(180deg, var(--black-secondary) 0%, var(--brown-dark) 100%);
         box-shadow: inset -1px 0 0 rgba(139, 69, 19, 0.3);
     }
@@ -112,14 +112,21 @@
     }
 
     main {
-        margin-top: 56px;
+        margin-top: 56px; /* Tetap beri margin top untuk navbar */
         background: linear-gradient(135deg, #f8f9fa 0%, var(--brown-light) 100%);
         min-height: calc(100vh - 56px);
     }
 
+    /* Pastikan navbar tetap di atas sidebar */
+    .navbar-brown {
+        z-index: 100;
+        position: relative;
+    }
+
     @media (max-width: 767.98px) {
         .sidebar {
-            top: 5rem;
+            top: 56px; /* Pada mobile, tetap di bawah navbar */
+            padding: 20px 0 0;
         }
     }
 </style>
